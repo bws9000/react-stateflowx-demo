@@ -6,14 +6,21 @@ import {
   gemini,
   jsonRpc,
   mockProvider,
-  http,
+  websocket,
 } from '@stateflowx/client';
 
 const config = defineConfig({
   protocol: jsonRpc(),
 
-  transport: http({
-    url: 'http://localhost:3000/rpc',
+  //
+  // StateFlowX V1 currently standardizes on:
+  //
+  // - JSON-RPC
+  // - WebSocket transport
+  // - realtime runtime event streaming
+  //
+  transport: websocket({
+    url: 'ws://localhost:3000',
   }),
 
   providers: [
@@ -34,7 +41,10 @@ const config = defineConfig({
 
       method: 'GET',
 
-      url: 'https://api.open-meteo.com/v1/forecast?latitude=40.7357&longitude=-74.1724&current_weather=true',
+      //
+      // Demo-safe deterministic mock
+      //
+      url: 'mock://weather',
     },
   ],
 
@@ -52,6 +62,7 @@ const config = defineConfig({
       Format this weather data into an array structure.
 
       Example:
+
       [
         {
           "city": "Newark",
@@ -67,40 +78,79 @@ const config = defineConfig({
 const client = createClient(config);
 
 function App() {
-  const [response, setResponse] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const [response, setResponse] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
+
     async function run() {
+
       try {
+
+        //
+        // Optional runtime event logging
+        //
+        client.onRuntimeEvent(
+          (event) => {
+            console.log(
+              '[RUNTIME EVENT]',
+              event
+            );
+          }
+        );
+
         await client.connect();
 
-        console.log('CONNECTED');
+        console.log(
+          'CONNECTED'
+        );
 
-        await client.request('runtime.initialize', config);
+        await client.request(
+          'runtime.initialize',
+          config
+        );
 
-        console.log('RUNTIME INITIALIZED');
+        console.log(
+          'RUNTIME INITIALIZED'
+        );
 
-        const result = await client.request('weather.execute');
+        const result =
+          await client.request(
+            'weather.execute'
+          );
 
-        console.log('RAW RESPONSE:', result);
+        console.log(
+          'RAW RESPONSE:',
+          result
+        );
 
-        const cleaned = result
-          .replace(/```json/g, '')
-          .replace(/```/g, '')
-          .trim();
+        const cleaned =
+          result
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim();
 
-        const parsed = JSON.parse(cleaned);
+        const parsed =
+          JSON.parse(cleaned);
 
         setResponse(parsed);
+
       } catch (e) {
+
         console.error(e);
+
       } finally {
+
         setLoading(false);
       }
     }
 
     run();
+
   }, []);
 
   return (
@@ -113,13 +163,17 @@ function App() {
         color: 'white',
       }}
     >
-      <h1>StateFlowX React Demo</h1>
+      <h1>
+        StateFlowX React Demo
+      </h1>
 
       <p>
-        Runtime + Workflow + AI Provider + HTTP Service
+        Runtime + Workflow + AI Provider + WebSocket Runtime
       </p>
 
-      {loading && <p>Loading...</p>}
+      {loading && (
+        <p>Loading...</p>
+      )}
 
       {!loading && (
         <pre
@@ -130,7 +184,11 @@ function App() {
             overflow: 'auto',
           }}
         >
-          {JSON.stringify(response, null, 2)}
+          {JSON.stringify(
+            response,
+            null,
+            2
+          )}
         </pre>
       )}
     </div>

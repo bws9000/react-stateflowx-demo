@@ -39,7 +39,7 @@ node main.mjs
 The runtime host should now be running locally on:
 
 ```txt
-ws://localhost:3000
+ws://localhost:3001
 ```
 
 ---

@@ -4,6 +4,7 @@ import {
   createClient,
   defineConfig,
   gemini,
+  http,
   jsonRpc,
   mockProvider,
   websocket,
@@ -13,14 +14,22 @@ const config = defineConfig({
   protocol: jsonRpc(),
 
   //
-  // StateFlowX V1 currently standardizes on:
+  // Runtime transport
   //
-  // - JSON-RPC
-  // - WebSocket transport
-  // - realtime runtime event streaming
+  // HTTP:
+  //   - Request / response
   //
-  transport: websocket({
-    url: 'ws://localhost:3001',
+  // WebSocket:
+  //   - Request / response
+  //   - Realtime runtime events
+  //
+
+  // transport: websocket({
+  //   url: 'ws://localhost:3001',
+  // }),
+
+  transport: http({
+    url: 'http://localhost:3000/rpc',
   }),
 
   providers: [
@@ -57,19 +66,19 @@ const config = defineConfig({
       provider: 'default',
 
       prompt: `
-      Return ONLY valid JSON.
+        Return ONLY valid JSON.
 
-      Format this weather data into an array structure.
+        Format this weather data into an array structure.
 
-      Example:
+        Example:
 
-      [
-        {
-          "city": "Newark",
-          "temperature": 72,
-          "condition": "Rain"
-        }
-      ]
+        [
+          {
+            "city": "Newark",
+            "temperature": 72,
+            "condition": "Rain"
+          }
+        ]
       `,
     },
   ],
@@ -92,21 +101,36 @@ function App() {
       try {
 
         //
-        // Optional runtime event logging
+        // Optional runtime event logging.
         //
-        client.onRuntimeEvent(
-          (event) => {
-            console.log(
-              '[RUNTIME EVENT]',
-              event
-            );
-          }
-        );
+        // Runtime events are emitted when using
+        // the WebSocket transport.
+        //
+        client.onRuntimeEvent((event) => {
+          console.log(
+            '[RUNTIME EVENT]',
+            event
+          );
+        });
+
+        client.onConnect(() => {
+          console.log(
+            '[CLIENT] Connected'
+          );
+        });
+
+        client.onDisconnect(() => {
+          console.log(
+            '[CLIENT] Disconnected'
+          );
+        });
 
         await client.connect();
 
+        await client.precheck(config);
+
         console.log(
-          'CONNECTED'
+          '[CLIENT] Precheck passed'
         );
 
         await client.request(
@@ -115,7 +139,7 @@ function App() {
         );
 
         console.log(
-          'RUNTIME INITIALIZED'
+          '[CLIENT] Runtime initialized'
         );
 
         const result =
@@ -124,7 +148,7 @@ function App() {
           );
 
         console.log(
-          'RAW RESPONSE:',
+          '[WORKFLOW RESULT]',
           result
         );
 
@@ -139,9 +163,12 @@ function App() {
 
         setResponse(parsed);
 
-      } catch (e) {
+      } catch (error) {
 
-        console.error(e);
+        console.error(
+          '[WORKFLOW ERROR]',
+          error
+        );
 
       } finally {
 
@@ -168,7 +195,7 @@ function App() {
       </h1>
 
       <p>
-        Runtime + Workflow + AI Provider + WebSocket Runtime
+        Runtime + Workflow + AI Provider
       </p>
 
       {loading && (

@@ -57,29 +57,55 @@ const config = defineConfig({
     },
   ],
 
-  workflows: [
+  flows: [
     {
+      name: 'Weather Analysis',
+
       route: 'weather.execute',
 
-      service: 'weather',
+      actions: [
+        {
+          id: 'weather-service',
 
-      provider: 'default',
+          type: 'service',
 
-      prompt: `
-        Return ONLY valid JSON.
+          service: 'weather',
 
-        Format this weather data into an array structure.
+          outputConnectors: [
+            {
+              actionId: 'weather-provider',
+            },
+          ],
+        },
 
-        Example:
+        {
+          id: 'weather-provider',
 
-        [
-          {
-            "city": "Newark",
-            "temperature": 72,
-            "condition": "Rain"
-          }
-        ]
-      `,
+          type: 'provider',
+
+          provider: 'gemini',
+
+          prompt: `
+            Return ONLY valid JSON.
+
+            Return exactly one array item.
+
+            Schema:
+
+            [
+              {
+                "city": string,
+                "temperature": number,
+                "condition": string
+              }
+            ]
+
+            Use the supplied weather data from {{weather-service}}
+          `,
+
+          output: true,
+        },
+      ],
     },
   ],
 });

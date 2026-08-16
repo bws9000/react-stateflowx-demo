@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@stateflowx/client": "^0.4.21",
+    "@stateflowx/client": "^0.4.28",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

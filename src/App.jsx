@@ -58,56 +58,91 @@ const config = defineConfig({
   ],
 
   flows: [
-    {
-      name: 'Weather Analysis',
+  {
+    name: 'Weather Analysis',
 
-      route: 'weather.execute',
+    route: 'weather.execute',
 
-      actions: [
-        {
-          id: 'weather-service',
+    actions: [
+      {
+        id: 'weather-service',
 
-          type: 'service',
+        type: 'service',
 
-          service: 'weather',
+        service: 'weather',
 
-          outputConnectors: [
+        outputConnectors: [
+          {
+            actionId:
+              'weather-provider',
+          },
+        ],
+      },
+      {
+        id: 'weather-provider',
+
+        type: 'provider',
+
+        provider: 'gemini',
+
+        prompt: `
+          Return ONLY valid JSON.
+
+          Return exactly one array item.
+
+          Schema:
+
+          [
             {
-              actionId: 'weather-provider',
-            },
-          ],
-        },
+              "city": string,
+              "temperature": number,
+              "condition": string
+            }
+          ]
 
-        {
-          id: 'weather-provider',
+          Use the supplied weather data from {{weather-service}}
+        `,
 
-          type: 'provider',
+        output: true,
 
-          provider: 'gemini',
+        //
+        // Optional MySQL persistence
+        //
+        // Uncomment this connector and the
+        // weather-store action below.
+        //
+        // The runtime host must use:
+        // STORE_TYPE=mysql
+        //
+        // outputConnectors: [
+        //   {
+        //     actionId:
+        //       'weather-store',
+        //   },
+        // ],
+      },
 
-          prompt: `
-            Return ONLY valid JSON.
-
-            Return exactly one array item.
-
-            Schema:
-
-            [
-              {
-                "city": string,
-                "temperature": number,
-                "condition": string
-              }
-            ]
-
-            Use the supplied weather data from {{weather-service}}
-          `,
-
-          output: true,
-        },
-      ],
-    },
-  ],
+      //
+      // Optional MySQL store action
+      //
+      // {
+      //   id: 'weather-store',
+      //
+      //   type: 'store',
+      //
+      //   store: 'mysql',
+      //
+      //   operation: 'set',
+      //
+      //   key: 'weather:last-result',
+      //
+      //   log: true,
+      //
+      //   output: true,
+      // },
+    ],
+  },
+],
 });
 
 const client = createClient(config);
@@ -220,9 +255,9 @@ function App() {
         StateFlowX React Demo
       </h1>
 
-      <p>
-        Runtime + Workflow + AI Provider
-      </p>
+    <p>
+      Configurable Flow + AI Provider + Optional MySQL Storage
+    </p>
 
       {loading && (
         <p>Loading...</p>
